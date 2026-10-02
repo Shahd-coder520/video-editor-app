@@ -1,17 +1,40 @@
-# shahed
+# Lomio Pro Max - Advanced Video Editor 🎬🚀
 
-A new Flutter project.
+مرحباً بك في المستودع الرسمي لتطبيق **Lomio Pro Max**. تطبيق مونتاج احترافي للهواتف الذكية يوفر أدوات تحرير متقدمة تنافس تطبيقات سطح المكتب. 
 
-## Getting Started
+تم بناء هذا التطبيق ليكون منصة متكاملة لمعالجة الفيديو والصوت، مع التركيز المعماري على **الأداء العالي (High Performance)** و**السرعة الفائقة في التصدير (Rendering)**.
 
-This project is a starting point for a Flutter application.
+## 🔥 العبقرية الهندسية (Engineering Highlight)
+يتميز هذا التطبيق ببنية هندسية متقدمة؛ حيث تم **الاستغناء كلياً عن مكتبة FFmpeg التقليدية البطيئة** في عمليات التصدير والرندرة. بدلاً من ذلك، تم تطوير **محرك معالجة محلي (Native Engine)** مخصص باستخدام `Media3 Transformer` في طبقة الـ Native (Kotlin/Android). 
 
-A few resources to get you started if this is your first Flutter project:
+هذا المحرك يقوم بقراءة بيانات التايم لاين (JSON) من واجهة المستخدم، ثم يقوم برسم الفلاتر (ColorMatrix)، الحركات (Keyframes)، والنصوص مباشرة على الـ `Canvas / OpenGL` أثناء الرندرة، مما أدى إلى:
+* **تصدير فوري (Real-time Rendering):** معالجة ودمج التعديلات بصلب الفيديو بسرعة خيالية.
+* **استهلاك أقل للموارد:** استغلال أفضل لقدرات المعالج (CPU/GPU).
+* **دقة متناهية:** تحكم إطاري (Frame-by-frame) في كافة المؤثرات.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## ✨ الميزات الأساسية (Key Features)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* **محرك الإطارات المفتاحية (Keyframe Engine):** تحكم كامل وديناميكي في الحركة، الحجم، الشفافية، الدوران، الألوان، ومستوى الصوت عبر مسارات منحنية (Ease In-Out, Bounce, Linear).
+* **تصحيح وفلاتر الألوان السينمائية:** أدوات تحكم دقيقة في السطوع، التباين، التشبع، درجة الحرارة، بالإضافة لفلاتر جاهزة (Vivid, Noir, Cyberpunk, Cinema...).
+* **الكابشن التلقائي الذكي (Auto Captions):** نظام يستخرج الصوت من التايم لاين، يرسله لمعالجة الـ API، ويعيد تفريغ النص ككلمات متزامنة (Karaoke) مع إمكانية التعديل، فصل الكلمات، وتلوينها.
+* **إدارة التايم لاين المتقدمة:** قص (Split)، حذف، وإعادة ترتيب المقاطع (Drag & Drop) على مسارات متعددة (Tracks).
+* **الانتقالات والحركات (Transitions & Animations):** تأثيرات دخول وخروج مرنة للنصوص والمقاطع (Fade, Zoom, Pop up, Slide, Spin).
+* **التحكم بالصوت (Audio Processing):** تسريع/تبطيء الصوت مع الحفاظ على درجة الصوت (Pitch)، ومؤثرات تلاشي الدخول والخروج (Fade In/Out).
+* **استيراد وتصدير مرن:** دعم إضافة فيديوهات، صور، وملفات صوتية من الذاكرة المحلية، مع خيارات تصدير بدقة (1080p / 720p).
+
+## 🛠️ التقنيات المعمارية (Tech Stack)
+
+* **الواجهة الأمامية (Frontend / UI):** `Flutter` (WebViewController) مدمج مع واجهة `HTML/CSS/JS` تفاعلية فائقة السرعة للتحكم بالتايم لاين بشكل سلس.
+* **المحرك الأصلي (Native Engine - Backend):** `Kotlin` باستخدام مكتبات `androidx.media3` (`Transformer`, `Effect`, `AudioProcessor`).
+* **خادم محلي للوسائط (Local HTTP Server):** مبرمج بلغة `Dart` لتخطي قيود الـ WebView وقراءة ملفات الذاكرة المحلية بأمان (Stream & Range Requests).
+* **إدارة الحالات والبيانات:** نظام تزامن ثنائي الاتجاه (Two-way Bridge) بين Flutter و JavaScript لنقل بيانات التايم لاين كـ JSON.
+
+## ⚙️ التشغيل المحلي (Local Setup)
+
+لتشغيل هذا التطبيق على بيئة التطوير الخاصة بك:
+
+1. استنساخ المستودع:
+   ```bash
+   git clone [https://github.com/Shahd-coder520/video-editor-app.git](https://github.com/Shahd-coder520/video-editor-app.git)
+2.تثبيت الحزم (Flutter Packages): flutter pub get
+3.تشغيل التطبيق على جهاز حقيقي (يُنصح به لاختبار قدرات الرندرة): flutter run
