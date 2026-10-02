@@ -36,7 +36,8 @@
 1. استنساخ المستودع:
    ```bash
    git clone [https://github.com/Shahd-coder520/video-editor-app.git](https://github.com/Shahd-coder520/video-editor-app.git)
-2.تثبيت الحزم (Flutter Packages): 
-flutter pub get
-3.تشغيل التطبيق على جهاز حقيقي (يُنصح به لاختبار قدرات الرندرة):
-flutter run
+2. تثبيت الحزم (Flutter Packages):
+   flutter pub get
+
+3. تشغيل التطبيق على جهاز حقيقي (يُنصح به لاختبار قدرات الرندرة):
+   flutter run
