@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lomio Mobile Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-surface: #121212;
+            --bg-sheet: #1c1c1e;
+            --primary: #ea4335;
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+            --accent: #3b82f6;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+        }
+        body {
+            background: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Cairo', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-main);
+            z-index: 10;
+        }
+        .export-btn {
+            background: var(--text-main);
+            color: var(--bg-main);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .time-display {
+            font-variant-numeric: tabular-nums;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .preview-wrapper {
+            flex: 0 0 40vh;
+            background: #09090b;
+            position: relative;
+            display: block;
+            overflow: hidden;
+            border-radius: 0 0 16px 16px;
+            touch-action: none;
+            z-index: 1
+        }
+        .media-element {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            cursor: grab;
+            transform-origin: center;
+        }
+        .text-element {
+            position: absolute;
+            white-space: nowrap;
+            font-weight: 800;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+            cursor: grab;
+            transform-origin: center;
+            display: block;
+            visibility: visible;
+            background-size: 100% 100%;
+        }
+        .effect-element {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: block;
+            transform-origin: center;
+            z-index: 998;
+        }
+        .media-element.active,
+        .text-element.active {
+            outline: 2px dashed var(--primary);
+            box-shadow: 0 0 15px rgba(234, 67, 53, 0.4);
+            z-index: 99 !important;
+        }
+        .placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #aaa;
+            text-align: center;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 18px;
+            padding: 8px;
+            opacity: 0.8;
+        }
+        .icon-btn:active {
+            opacity: 1;
+            transform: scale(0.9);
+        }
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--text-main);
+            color: var(--bg-main);
+            border: none;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .timeline-section {
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: auto;
+            padding-top: 10px;
+            padding-bottom: 80px;
+        }
+        .ruler {
+            height: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            min-width: 100%;
+        }
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--text-main);
+            z-index: 50;
+            pointer-events: none;
+            left: 0;
+        }
+        .playhead::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            background: var(--text-main);
+            border-radius: 50%;
+        }
+        .tracks {
+            display: flex;
+            flex-direction: column;
+            min-width: 100%;
+            gap: 4px;
+            padding: 0;
+            margin-top: 10px;
+        }
+        .track {
+            height: 50px;
+            position: relative;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+        }
+        .clip {
+            position: absolute;
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            padding: 0 8px;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .clip.active {
+            border: 2px solid var(--text-main);
+            z-index: 10;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+        }
+        .clip.dragging {
+            opacity: 0.8;
+            transform: scale(1.05);
+            z-index: 100;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            cursor: grabbing;
+            border: 2px solid var(--accent) !important;
+        }
+        .clip.video {
+            background: #2563eb;
+        }
+        .clip.image {
+            background: #7c3aed;
+        }
+        .clip.audio {
+            background: #059669;
+            height: 35px;
+            margin-top: 7px;
+        }
+        .clip.text {
+            background: #ea580c;
+            height: 35px;
+            margin-top: 7px;
+        }
+        .clip.effect {
+            background: #d946ef;
+            height: 35px;
+            margin-top: 7px;
+            border: 1px dashed white;
+        }
+        .trim-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 15px;
+            background: rgba(255,255,255,0.15);
+            z-index: 50;
+            cursor: ew-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .trim-handle::after {
+            content: '';
+            width: 2px;
+            height: 14px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 2px;
+        }
+        .trim-handle.left {
+            left: 0;
+            border-right: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px 0 0 6px;
+        }
+        .trim-handle.right {
+            right: 0;
+            border-left: 1px solid rgba(255,255,255,0.3);
+            border-radius: 0 6px 6px 0;
+        }
+        .bottom-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: var(--bg-surface);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 0 20px;
+            overflow-x: auto;
+            border-top: 1px solid var(--border);
+            z-index: 40;
+        }
+        .bottom-toolbar::-webkit-scrollbar {
+            display: none;
+        }
+        .tool-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 50px;
+            opacity: 0.7;
+        }
+        .tool-btn i {
+            font-size: 20px;
+        }
+        .tool-btn:active {
+            opacity: 1;
+            transform: scale(0.95);
+        }
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-sheet);
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100;
+            max-height: 60vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+        .sheet-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .close-sheet {
+            background: #3f3f46;
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .sheet-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .sheet-tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            padding-bottom: 5px;
+            white-space: nowrap;
+        }
+        .sheet-tab.active {
+            color: var(--text-main);
+            border-bottom: 2px solid var(--text-main);
+        }
+        .sheet-content {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .sheet-content.active {
+            display: flex;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #3f3f46;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--text-main);
+            border-radius: 50%;
+        }
+        .control-group input[type="text"],
+        .control-group select {
+            background: #000;
+            color: white;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            font-family: 'Cairo';
+        }
+        select option {
+            background: var(--bg-sheet);
+            color: white;
+        }
+        .btn-danger {
+            background: rgba(234, 67, 53, 0.1);
+            color: #ea4335;
+            border: 1px solid rgba(234, 67, 53, 0.3);
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-top: 10px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        .btn-danger:active {
+            background: rgba(234, 67, 53, 0.2);
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .overlay.active {
+            display: block;
+            opacity: 1;
+        }
+        .ui-scroll-list {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 0 16px 0;
+            scrollbar-width: none;
+        }
+        .ui-scroll-list::-webkit-scrollbar {
+            display: none;
+        }
+        .ui-item {
+            flex: 0 0 auto;
+            background: var(--border);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 75px;
+        }
+        .ui-item i {
+            font-size: 20px;
+        }
+        .ui-item.active {
+            border-color: var(--primary);
+            background: rgba(234, 67, 53, 0.15);
+            color: var(--text-main);
+        }
+        .color-palette {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            align-items: center;
+            scrollbar-width: none;
+        }
+        .color-palette::-webkit-scrollbar {
+            display: none;
+        }
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid #3f3f46;
+            cursor: pointer;
+            flex: 0 0 auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: 0.2s;
+        }
+        .color-swatch.active {
+            border-color: var(--text-main);
+            transform: scale(1.15);
+        }
+        .color-picker-wrapper {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            flex: 0 0 auto;
+            border: 2px solid white;
+        }
+        .color-picker-wrapper input {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .font-item {
+            flex: 0 0 auto;
+            background: #27272a;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .font-item.active {
+            border-color: var(--primary);
+            background: rgba(234, 67, 53, 0.1);
+        }
+        .keyframe-marker {
+            position: absolute;
+            bottom: 2px;
+            font-size: 9px;
+            color: #fcd34d;
+            transform: translateX(-50%);
+            z-index: 20;
+            text-shadow: 0 0 3px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        .kf-btn-group {
+            display: flex;
+            background: #27272a;
+            border-radius: 10px;
+            padding: 2px 6px;
+            align-items: center;
+            gap: 2px;
+        }
+        .kf-btn-group
+        .icon-btn {
+            font-size: 11px !important;
+            padding: 4px 6px !important;
+            margin: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <select id="exportQuality" style="background: var(--bg-surface); color: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 12px; font-family: 'Cairo'; font-weight: 600; outline: none; font-size: 12px;">
+            <option value="1080">1080p</option><option value="720">720p</option>
+        </select>
+        <button class="export-btn" onclick="exportToBackend()">تصدير <i class="fas fa-arrow-up"></i></button>
+    </div>
+</div>
+
+<div class="preview-wrapper" id="previewArea">
+    <div class="placeholder" id="placeholder"><span>ابدأ إضافة مقاطعك</span></div>
+</div>
+
+<div class="control-bar">
+    <div><button class="icon-btn" onclick="undo()"><i class="fas fa-undo-alt"></i></button><button class="icon-btn" onclick="redo()"><i class="fas fa-redo-alt"></i></button></div>
+    <button class="play-btn" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
+    <div style="display: flex; gap: 8px;">
+        <button class="icon-btn" onclick="zoomOutTimeline()"><i class="fas fa-search-minus"></i></button>
+        <button class="icon-btn" onclick="zoomInTimeline()"><i class="fas fa-search-plus"></i></button>
+        <button class="icon-btn" onclick="splitClip()" style="color: var(--accent);"><i class="fas fa-cut"></i></button>
+    </div>
+</div>
+
+<div class="timeline-section" id="timelineScroll" dir="ltr">
+    <div class="ruler"><canvas id="rulerCanvas"></canvas><div class="playhead" id="playhead"></div></div>
+    <div class="tracks" id="tracksArea">
+        <div class="track" data-track="0"></div><div class="track" data-track="1"></div><div class="track" data-track="2"></div><div class="track" data-track="3"></div>
+    </div>
+</div>
+
+<div class="bottom-toolbar">
+    <button class="tool-btn" onclick="requestMedia('video')"><i class="fas fa-film"></i>فيديو</button>
+    <button class="tool-btn" onclick="requestMedia('image')"><i class="fas fa-image"></i>صورة</button>
+    <button class="tool-btn" onclick="addText()"><i class="fas fa-font"></i>نص</button>
+    <button class="tool-btn" onclick="requestMedia('audio')"><i class="fas fa-music"></i>صوت</button>
+    <button class="tool-btn" onclick="requestAutoCaption()" style="color: var(--accent);"><i class="fas fa-closed-captioning"></i>كابشن</button>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+<div class="bottom-sheet" id="propsSheet">
+    <div class="sheet-header">
+        <h3 id="sheetTitle">تعديل المقطع</h3><button class="close-sheet" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sheet-tabs">
+        <button class="sheet-tab active" onclick="switchTab('basic')" id="tab-basic">أساسي</button>
+        <button class="sheet-tab" onclick="switchTab('audio')" id="tab-audio" style="display:none; color: var(--primary);">الصوت 🎵</button>
+        <button class="sheet-tab" onclick="switchTab('adjust')" id="tab-adjust">ضبط الألوان</button>
+        <button class="sheet-tab" onclick="switchTab('filters')" id="tab-filters">فلاتر </button>
+        <button class="sheet-tab" onclick="switchTab('transitions')" id="tab-transitions">انتقالات <i class="fas fa-magic" style="color: var(--accent); margin-right: 4px;"></i></button>
+        <button class="sheet-tab" onclick="switchTab('text')" id="tab-text" style="display:none;">النص</button>
+        <button class="sheet-tab" onclick="switchTab('caption')" id="tab-caption" style="display:none;">الكابشن <i class="fas fa-closed-captioning" style="color: var(--accent);"></i></button>
+    </div>
+
+    <div class="sheet-content" id="content-audio">
+        <div class="control-group" id="volume-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">مستوى الصوت <span id="val-volume" style="color: var(--text-main);">100</span>%</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetProp('volume', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                </div>
+            </div>
+            <input type="range" id="volume" min="0" max="200" value="100" oninput="updateProperty('volume', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; display:flex; justify-content:space-between;">
+                تلاشي الدخول (Fade In) <span id="val-fadeIn" style="color:var(--accent);">0.0s</span>
+            </label>
+            <input type="range" id="fadeIn" min="0" max="5" step="0.1" value="0" oninput="updateProperty('fadeIn', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; display:flex; justify-content:space-between;">
+                تلاشي الخروج (Fade Out) <span id="val-fadeOut" style="color:var(--accent);">0.0s</span>
+            </label>
+            <input type="range" id="fadeOut" min="0" max="5" step="0.1" value="0" oninput="updateProperty('fadeOut', this.value)">
+        </div>
+    </div>
+
+    <div class="sheet-content active" id="content-basic">
+        <div class="control-group">
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">ترتيب الطبقة</div>
+            <div style="display: flex; gap: 10px;">
+                <button class="export-btn" onclick="changeLayer(1)" style="flex:1; justify-content:center; background:#ea4335;"><i class="fas fa-arrow-up"></i> إحضار للأمام</button>
+                <button class="export-btn" onclick="changeLayer(-1)" style="flex:1; justify-content:center; background:#3f3f46;"><i class="fas fa-arrow-down"></i> إرسال للخلف</button>
+            </div>
+        </div>
+
+        <div class="control-group" id="scale-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">الحجم (Scale)</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetProp('scale', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('scale', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('scale')" id="kf-scale" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('scale', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="scale" min="10" max="300" value="100" oninput="updateProperty('scale', this.value)">
+        </div>
+
+        <div class="control-group" id="opacity-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">الشفافية (Opacity)</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetProp('opacity', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('opacity', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('opacity')" id="kf-opacity" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('opacity', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="opacity" min="0" max="100" value="100" oninput="updateProperty('opacity', this.value)">
+        </div>
+        <div class="control-group" id="speed-group" style="display:none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">السرعة (Speed) <span id="val-speed" style="color: var(--accent);">1.0x</span></span>
+                <button class="icon-btn" onclick="event.stopPropagation(); updateSpeed(1.0)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+            </div>
+            <input type="range" id="speedSlider" min="0.5" max="3.0" step="0.1" value="1.0" oninput="updateSpeed(this.value)">
+        </div>
+    </div>
+
+    <div class="sheet-content" id="content-adjust">
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">السطوع <span id="val-brightness">100</span>%</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetColor('brightness', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('brightness', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('brightness')" id="kf-brightness" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('brightness', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="brightness" min="50" max="150" value="100" oninput="updateProperty('brightness', this.value)">
+        </div>
+
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">التباين <span id="val-contrast">100</span>%</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetColor('contrast', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('contrast', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('contrast')" id="kf-contrast" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('contrast', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="contrast" min="50" max="150" value="100" oninput="updateProperty('contrast', this.value)">
+        </div>
+
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">التشبع <span id="val-saturate">100</span>%</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetColor('saturate', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('saturate', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('saturate')" id="kf-saturate" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('saturate', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="saturate" min="0" max="200" value="100" oninput="updateProperty('saturate', this.value)">
+        </div>
+
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">درجة الحرارة <span id="val-temp">100</span>%</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetColor('temp', 100)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('temp', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('temp')" id="kf-temp" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('temp', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="temp" min="50" max="150" value="100" oninput="updateProperty('temp', this.value)">
+        </div>
+
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">تدرج اللون <span id="val-hue">0</span>°</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="icon-btn" onclick="event.stopPropagation(); resetColor('hue', 0)" style="padding:0; color:var(--accent); font-size: 14px;"><i class="fas fa-undo"></i></button>
+                    <div style="display:flex; background: #27272a; border-radius: 6px; padding: 2px 4px; align-items: center;">
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('hue', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('hue')" id="kf-hue" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('hue', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" id="hue" min="-180" max="180" value="0" oninput="updateProperty('hue', this.value)">
+        </div>
+    </div>
+
+    <div class="sheet-content" id="content-filters">
+        <div class="control-group">
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span>الفلتر الجاهز</span>
+                <button class="icon-btn" onclick="event.stopPropagation(); resetColor('filter', 'none')" style="padding:0; color:var(--accent); font-size: 16px;"><i class="fas fa-undo"></i></button>
+            </div>
+            <select id="filterType" onchange="applyOrSpawnEffect(this.value)">
+                <option value="none">بدون فلتر</option><option value="vivid">ألوان حيوية (Vivid)</option><option value="noir">أبيض وأسود (Noir)</option><option value="sepia">كلاسيكي (Sepia)</option><option value="warm">دافئ (Warm)</option><option value="cool">بارد (Cool)</option><option value="dramatic">درامي (Dramatic)</option><option value="cinema">سينمائي (Teal & Orange)</option><option value="cyberpunk">سايبر بانك (Cyberpunk)</option><option value="vintage">عتيق (Vintage)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="sheet-content" id="content-transitions">
+        <label style="font-weight: 700; color: white; margin-bottom: -5px;">حركة الدخول (In)</label>
+        <div class="ui-scroll-list" id="transInList"><div class="ui-item" data-val="none" onclick="setTransitionUI('in', 'none')"><i class="fas fa-ban"></i>بدون</div><div class="ui-item" data-val="fade" onclick="setTransitionUI('in', 'fade')"><i class="fas fa-moon"></i>تلاشي</div><div class="ui-item" data-val="flash" onclick="setTransitionUI('in', 'flash')"><i class="fas fa-bolt"></i>فلاش</div><div class="ui-item" data-val="zoom_in" onclick="setTransitionUI('in', 'zoom_in')"><i class="fas fa-search-plus"></i>تكبير</div><div class="ui-item" data-val="pop_up" onclick="setTransitionUI('in', 'pop_up')"><i class="fas fa-compress-arrows-alt"></i>انبثاق</div><div class="ui-item" data-val="slide_right" onclick="setTransitionUI('in', 'slide_right')"><i class="fas fa-arrow-right"></i>لليمين</div><div class="ui-item" data-val="slide_left" onclick="setTransitionUI('in', 'slide_left')"><i class="fas fa-arrow-left"></i>لليسار</div><div class="ui-item" data-val="slide_up" onclick="setTransitionUI('in', 'slide_up')"><i class="fas fa-arrow-up"></i>للأعلى</div><div class="ui-item" data-val="spin" onclick="setTransitionUI('in', 'spin')"><i class="fas fa-sync-alt"></i>دوران</div></div>
+        <div class="control-group" id="transInDurGroup" style="display:none; margin-top:-10px;"><label>المدة: <span id="transInDurVal" style="color:var(--accent);">1.0</span> ث</label><input type="range" id="transInDur" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateTransitionDur('in', this.value)"></div>
+        <hr style="border: 0; height: 1px; background: var(--border); margin: 5px 0;">
+        <label style="font-weight: 700; color: white; margin-bottom: -5px;">حركة الخروج (Out)</label>
+        <div class="ui-scroll-list" id="transOutList"><div class="ui-item" data-val="none" onclick="setTransitionUI('out', 'none')"><i class="fas fa-ban"></i>بدون</div><div class="ui-item" data-val="fade" onclick="setTransitionUI('out', 'fade')"><i class="fas fa-moon"></i>تلاشي</div><div class="ui-item" data-val="flash" onclick="setTransitionUI('out', 'flash')"><i class="fas fa-bolt"></i>فلاش</div><div class="ui-item" data-val="zoom_out" onclick="setTransitionUI('out', 'zoom_out')"><i class="fas fa-search-minus"></i>تصغير</div><div class="ui-item" data-val="pop_down" onclick="setTransitionUI('out', 'pop_down')"><i class="fas fa-level-down-alt"></i>انكماش</div><div class="ui-item" data-val="slide_right" onclick="setTransitionUI('out', 'slide_right')"><i class="fas fa-arrow-right"></i>لليمين</div><div class="ui-item" data-val="slide_left" onclick="setTransitionUI('out', 'slide_left')"><i class="fas fa-arrow-left"></i>لليسار</div><div class="ui-item" data-val="slide_down" onclick="setTransitionUI('out', 'slide_down')"><i class="fas fa-arrow-down"></i>للأسفل</div><div class="ui-item" data-val="spin" onclick="setTransitionUI('out', 'spin')"><i class="fas fa-undo-alt"></i>دوران</div></div>
+        <div class="control-group" id="transOutDurGroup" style="display:none; margin-top:-10px;"><label>المدة: <span id="transOutDurVal" style="color:var(--accent);">1.0</span> ث</label><input type="range" id="transOutDur" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateTransitionDur('out', this.value)"></div>
+    </div>
+
+    <div class="sheet-content" id="content-text">
+        <div class="control-group"><label>المحتوى</label><input type="text" id="textContent" oninput="updateProperty('text', this.value)"></div>
+        <div class="control-group"><label>الخط (Font)</label><select id="fontFamily" onchange="onFontChange(this)"><option value="Cairo">جاري التحميل...</option></select></div>
+        <div class="control-group"><label>اللون</label><input type="color" id="color" oninput="updateProperty('color', this.value)"></div>
+        <div class="control-group"><label>الحجم</label><input type="range" id="fontSize" min="10" max="100" value="30" oninput="updateProperty('fontSize', this.value)"></div>
+    </div>
+
+    <div class="sheet-content" id="content-caption">
+        <div class="control-group"><label style="display: flex; justify-content: space-between; align-items: center;">تعديل الكلمة <button class="export-btn" style="background: var(--accent); padding: 4px 10px; font-size: 11px;" onclick="splitCaptionText()">✂️ فصل هنا</button></label><input type="text" id="captionTextContent" oninput="updateProperty('text', this.value)"><small style="color: var(--text-muted); font-size: 10px;">ضعي المؤشر داخل النص واضغطي "فصل هنا" للتقسيم</small></div>
+        <label style="font-weight: 700; margin-bottom: -5px;">تأثير الأنيميشن</label>
+        <div class="ui-scroll-list" id="capStyleList"><div class="ui-item" data-val="karaoke" onclick="setCaptionStyleUI('karaoke')"><i class="fas fa-microphone-alt"></i>كاراوكي</div><div class="ui-item" data-val="popup" onclick="setCaptionStyleUI('popup')"><i class="fas fa-magic"></i>انبثاق</div><div class="ui-item" data-val="fade" onclick="setCaptionStyleUI('fade')"><i class="fas fa-wind"></i>تلاشي</div><div class="ui-item" data-val="slide_up" onclick="setCaptionStyleUI('slide_up')"><i class="fas fa-chevron-up"></i>صعود</div><div class="ui-item" data-val="highlight" onclick="setCaptionStyleUI('highlight')"><i class="fas fa-highlighter"></i>ماركر</div><div class="ui-item" data-val="normal" onclick="setCaptionStyleUI('normal')"><i class="fas fa-font"></i>عادي</div></div>
+        <label style="font-weight: 700; margin-bottom: -5px;">الخط</label>
+        <div class="ui-scroll-list" id="captionFontList"><span style="color:var(--text-muted); font-size:12px;">جاري التحميل...</span></div>
+        <label style="font-weight: 700; margin-bottom: -5px;">اللون الأساسي</label>
+        <div class="color-palette" id="colorPaletteMain"><div class="color-swatch" data-val="#ffffff" style="background:#ffffff" onclick="setPaletteColor('#ffffff', 'color', 'colorPaletteMain')"></div><div class="color-swatch" data-val="#000000" style="background:#000000" onclick="setPaletteColor('#000000', 'color', 'colorPaletteMain')"></div><div class="color-swatch" data-val="#ea4335" style="background:#ea4335" onclick="setPaletteColor('#ea4335', 'color', 'colorPaletteMain')"></div><div class="color-swatch" data-val="#fbbc05" style="background:#fbbc05" onclick="setPaletteColor('#fbbc05', 'color', 'colorPaletteMain')"></div><div class="color-swatch" data-val="#34a853" style="background:#34a853" onclick="setPaletteColor('#34a853', 'color', 'colorPaletteMain')"></div><div class="color-swatch" data-val="#4285f4" style="background:#4285f4" onclick="setPaletteColor('#4285f4', 'color', 'colorPaletteMain')"></div><div class="color-picker-wrapper"><i class="fas fa-eye-dropper" style="font-size:12px; color:black;"></i><input type="color" id="customColorMain" oninput="setPaletteColor(this.value, 'color', 'colorPaletteMain')"></div></div>
+        <label style="font-weight: 700; margin-bottom: -5px;">لون الكاراوكي</label>
+        <div class="color-palette" id="colorPaletteActive"><div class="color-swatch" data-val="#ea4335" style="background:#ea4335" onclick="setPaletteColor('#ea4335', 'activeColor', 'colorPaletteActive')"></div><div class="color-swatch" data-val="#fbbc05" style="background:#fbbc05" onclick="setPaletteColor('#fbbc05', 'activeColor', 'colorPaletteActive')"></div><div class="color-swatch" data-val="#34a853" style="background:#34a853" onclick="setPaletteColor('#34a853', 'activeColor', 'colorPaletteActive')"></div><div class="color-swatch" data-val="#4285f4" style="background:#4285f4" onclick="setPaletteColor('#4285f4', 'activeColor', 'colorPaletteActive')"></div><div class="color-swatch" data-val="#ffffff" style="background:#ffffff" onclick="setPaletteColor('#ffffff', 'activeColor', 'colorPaletteActive')"></div><div class="color-swatch" data-val="#000000" style="background:#000000" onclick="setPaletteColor('#000000', 'activeColor', 'colorPaletteActive')"></div><div class="color-picker-wrapper"><i class="fas fa-eye-dropper" style="font-size:12px; color:black;"></i><input type="color" id="customColorActive" oninput="setPaletteColor(this.value, 'activeColor', 'colorPaletteActive')"></div></div>
+        <div class="control-group"><label>الحجم</label><input type="range" id="captionFontSize" min="10" max="100" value="28" oninput="updateProperty('fontSize', this.value)"></div>
+    </div>
+    <button class="btn-danger" onclick="deleteSelected()"><i class="fas fa-trash-alt"></i> حذف المقطع</button>
+</div>
+
+<script>
+    console.log("تم تحميل ملف الـ JS بنجاح");
+    let clips = [];
+    let selectedClip = null;
+    let isPlaying = false;
+    let currentTime = 0;
+    let totalDuration = 0;
+    let zoom = 40;
+    let animationFrameId;
+    let lastTimestamp = 0;
+    let historyStack = [];
+    let historyIndex = -1;
+    const GOOGLE_FONTS_API_KEY = 'AIzaSyAakJCSWuBw0pCiM9cDYoYglGpF4hV8G5I';
+    let availableFonts = [];
+    let previewDraggingEl = null;
+    let pStartX = 0, pStartY = 0, pInitialPosX = 50, pInitialPosY = 50;
+    let audioCtx;
+
+    function initAudio() {
+       if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+       }
+       if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+       }
+    }
+    function __injectKeyframeUI() {
+        let tabsContainer = document.querySelector('.sheet-tabs');
+        if (tabsContainer && !document.getElementById('tab-motion')) {
+            let motionTab = document.createElement('button');
+            motionTab.className = 'sheet-tab';
+            motionTab.id = 'tab-motion';
+            motionTab.onclick = () => switchTab('motion');
+            motionTab.innerHTML = 'الحركة ';
+            tabsContainer.insertBefore(motionTab, document.getElementById('tab-adjust'));
+        }
+
+        let propsSheet = document.getElementById('propsSheet');
+        if (propsSheet && !document.getElementById('content-motion')) {
+            let motionContent = document.createElement('div');
+            motionContent.className = 'sheet-content';
+            motionContent.id = 'content-motion';
+            motionContent.innerHTML = `
+                <div class="control-group">
+                    <div style="font-size: 12px; color: var(--accent); font-weight: 800; margin-bottom: 8px;">نوع الحركة (المنحنى) </div>
+                    <select id="curveType" onchange="updateCurveType(this.value)" style="width: 100%; padding: 10px; border-radius: 8px; background: #000; color: white; border: 1px solid var(--border); font-family: 'Cairo'; outline: none;">
+                        <option value="ease-in-out">نعومة (Ease In-Out)</option>
+                        <option value="linear">خطي (Linear)</option>
+                        <option value="ease-in">تسارع (Ease In)</option>
+                        <option value="bounce">ارتداد (Bounce)</option>
+                    </select>
+                </div>
+                <div class="control-group" id="rotation-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">الدوران <span id="val-rotation">0</span>°</span>
+                        <div style="display:flex; background: #27272a; border-radius: 8px; padding: 2px 4px; align-items: center;">
+                            <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('rotation', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button>
+                            <button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('rotation')" id="kf-rotation" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button>
+                            <button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('rotation', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button>
+                        </div>
+                    </div>
+                    <input type="range" id="rotation" min="-180" max="180" value="0" oninput="updateProperty('rotation', this.value)">
+                </div>
+            `;
+            let btnDanger = document.querySelector('.btn-danger');
+            propsSheet.insertBefore(motionContent, btnDanger);
+        }
+        const props = ['scale', 'opacity', 'brightness', 'contrast', 'saturate', 'temp', 'hue', 'volume'];
+        props.forEach(prop => {
+            let input = document.getElementById(prop);
+            if (input && !document.getElementById('kf-' + prop)) {
+                let header = input.previousElementSibling;
+                if (header) {
+                    header.style.display = 'flex'; header.style.justifyContent = 'space-between'; header.style.alignItems = 'center';
+                    header.insertAdjacentHTML('beforeend', `<div style="display:flex; background: #27272a; border-radius: 8px; padding: 2px 4px; align-items: center;"><button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('${prop}', -1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-right"></i></button><button class="icon-btn" onclick="event.stopPropagation(); toggleKeyframe('${prop}')" id="kf-${prop}" style="padding:2px 8px; color:var(--text-muted); font-size: 14px; margin:0;"><i class="far fa-gem"></i></button><button class="icon-btn" onclick="event.stopPropagation(); jumpToKeyframe('${prop}', 1)" style="padding:2px 6px; font-size: 10px; margin:0;"><i class="fas fa-chevron-left"></i></button></div>`);
+                }
+            }
+        });
+    }
+    setTimeout(__injectKeyframeUI, 100);
+
+
+
+    function switchTab(id) {
+        document.querySelectorAll('.sheet-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.sheet-content').forEach(c => c.classList.remove('active'));
+        let tab = document.getElementById('tab-' + id);
+        if (tab) tab.classList.add('active');
+        let content = document.getElementById('content-' + id);
+        if (content) content.classList.add('active');
+    }
+
+    function openSheet(title) {
+        document.getElementById('sheetTitle').innerText = title;
+        document.getElementById('overlay').classList.add('active');
+        document.getElementById('propsSheet').classList.add('active');
+    }
+    function closeSheet() {
+        document.getElementById('overlay').classList.remove('active');
+        document.getElementById('propsSheet').classList.remove('active');
+        document.querySelectorAll('.media-element, .text-element, .effect-element').forEach(e => e.classList.remove('active'));
+        selectedClip = null; renderTimeline();
+    }
+    function formatTime(s) {
+        let m = Math.floor(s / 60).toString().padStart(2, '0');
+        let sec = Math.floor(s % 60).toString().padStart(2, '0');
+        return `${m}:${sec}`;
+    }
+
+    function updateCurveType(val) {
+        if (selectedClip) {
+            selectedClip.curveType = val;
+            save();
+            syncUI();
+        }
+    }
+
+    window.getInterpolatedValue = function(clip, prop, baseValue, localTime) {
+        if (!clip.keyframes || !clip.keyframes[prop] || clip.keyframes[prop].length === 0) return baseValue;
+        let kfs = clip.keyframes[prop];
+        if (prop === 'filter') {
+            let activeVal = baseValue;
+            for (let i = 0; i < kfs.length; i++) {
+                if (localTime >= kfs[i].time - 0.05) activeVal = kfs[i].val;
+            }
+            return activeVal;
+        }
+        if (localTime <= kfs[0].time) return kfs[0].val;
+        if (localTime >= kfs[kfs.length - 1].time) return kfs[kfs.length - 1].val;
+
+        for (let i = 0; i < kfs.length - 1; i++) {
+            if (localTime >= kfs[i].time && localTime <= kfs[i+1].time) {
+                let rawProgress = (localTime - kfs[i].time) / (kfs[i+1].time - kfs[i].time);
+                let progress = rawProgress;
+                let curve = clip.curveType || 'ease-in-out';
+                if (curve === 'ease-in-out') { progress = -(Math.cos(Math.PI * rawProgress) - 1) / 2; }
+                else if (curve === 'ease-in') { progress = Math.pow(rawProgress, 3); }
+                else if (curve === 'bounce') {
+                    if (rawProgress < (1 / 2.75)) {
+                        progress = 7.5625 * rawProgress * rawProgress;
+                    } else if (rawProgress < (2 / 2.75)) {
+                        progress = 7.5625 * (rawProgress -= (1.5 / 2.75)) * rawProgress + 0.75;
+                    } else if (rawProgress < (2.5 / 2.75)) {
+                        progress = 7.5625 * (rawProgress -= (2.25 / 2.75)) * rawProgress + 0.9375;
+                    } else {
+                        progress = 7.5625 * (rawProgress -= (2.625 / 2.75)) * rawProgress + 0.984375;
+                    }
+                }
+                return kfs[i].val + (kfs[i+1].val - kfs[i].val) * progress;
+            }
+        }
+        return baseValue;
+    };
+
+   function updateProperty(prop, val) {
+        if (!selectedClip) return;
+        let parsedVal = (prop === 'filter' || prop === 'text' || prop === 'fontFamily' || prop === 'captionStyle' || prop === 'activeColor' || prop === 'color') ? val : parseFloat(val);
+        if (prop === 'fadeIn' || prop === 'fadeOut') {
+            selectedClip[prop] = parsedVal;
+            let valEl = document.getElementById(`val-${prop}`);
+            if (valEl) valEl.innerText = parsedVal + 's';
+            applyStyles(selectedClip, document.getElementById(`media-${selectedClip.id}`));
+            save();
+            return;
+        }
+
+        if (!selectedClip.keyframes) selectedClip.keyframes = {};
+        if (!selectedClip.keyframes[prop]) selectedClip.keyframes[prop] = [];
+        let kfs = selectedClip.keyframes[prop];
+        let localTime = currentTime - selectedClip.start;
+
+        if (localTime <= 0.05) {
+            selectedClip[prop] = parsedVal;
+            if (kfs.length > 0 && kfs[0].time <= 0.05) kfs[0].val = parsedVal;
+        }
+        else {
+            if (kfs.length === 0) {
+                let baseVal = selectedClip[prop] !== undefined ? selectedClip[prop] : (['scale','opacity','brightness','contrast','saturate','temp','volume'].includes(prop) ? 100 : (['hue', 'rotation'].includes(prop) ? 0 : 50));
+                kfs.push({ time: 0, val: baseVal });
+            }
+            let existingIndex = kfs.findIndex(kf => Math.abs(kf.time - localTime) <= 0.05);
+            if (existingIndex !== -1) { kfs[existingIndex].val = parsedVal; } else { kfs.push({ time: localTime, val: parsedVal }); }
+            kfs.sort((a, b) => a.time - b.time);
+        }
+
+        if (prop === 'filter') { let targetEl = document.getElementById('filterType'); if (targetEl) targetEl.value = parsedVal; }
+        else { let valEl = document.getElementById(`val-${prop}`); if (valEl) valEl.innerText = parsedVal; }
+
+        checkKeyframeState();
+        renderTimeline();
+        applyStyles(selectedClip, document.getElementById(`media-${selectedClip.id}`));
+        save();
+    }
+
+    function updateSpeed(val) {
+        if (!selectedClip || (selectedClip.type !== 'video' && selectedClip.type !== 'audio'))
+        return;
+
+        let newSpeed = parseFloat(val);
+        let oldSpeed = selectedClip.speed || 1.0;
+
+        if (newSpeed === oldSpeed) return;
+
+        let ratio = oldSpeed / newSpeed;
+        selectedClip.dur = selectedClip.dur * ratio;
+        selectedClip.speed = newSpeed;
+
+        let slider = document.getElementById('speedSlider');
+        if (slider) slider.value = newSpeed;
+        let valEl = document.getElementById('val-speed');
+        if (valEl) valEl.innerText = newSpeed.toFixed(1) + 'x';
+
+        let el = document.getElementById(`media-${selectedClip.id}`);
+        if (el && (el.tagName === 'VIDEO' || el.tagName === 'AUDIO')) {
+            el.playbackRate = newSpeed;
+        }
+
+        renderTimeline();
+        save();
+    }
+
+    function toggleKeyframe(prop) {
+        if (!selectedClip) return;
+        if (!selectedClip.keyframes) selectedClip.keyframes = {};
+        if (!selectedClip.keyframes[prop]) selectedClip.keyframes[prop] = [];
+        let kfs = selectedClip.keyframes[prop];
+        let localTime = currentTime - selectedClip.start;
+        let existingIndex = kfs.findIndex(kf => Math.abs(kf.time - localTime) <= 0.05);
+        if (existingIndex !== -1) { kfs.splice(existingIndex, 1); }
+        else {
+            let inputEl = document.getElementById(prop);
+            let valToSave = inputEl ? parseFloat(inputEl.value) : (selectedClip[prop] || (['hue', 'rotation', 'fadeIn', 'fadeOut'].includes(prop) ? 0 : 100));
+            if (kfs.length === 0 && localTime > 0.05) { let baseVal = selectedClip[prop] !== undefined ? selectedClip[prop] : (['scale','opacity','brightness','contrast','saturate','temp','volume'].includes(prop) ? 100 : (['hue', 'rotation', 'fadeIn', 'fadeOut'].includes(prop) ? 0 : 50)); kfs.push({ time: 0, val: baseVal }); }
+            kfs.push({ time: localTime, val: valToSave });
+            kfs.sort((a, b) => a.time - b.time);
+        }
+        checkKeyframeState(); save(); renderTimeline(); syncUI();
+    }
+
+    function jumpToKeyframe(prop, direction) {
+        if (!selectedClip || !selectedClip.keyframes || !selectedClip.keyframes[prop]) return;
+        let kfs = selectedClip.keyframes[prop];
+        if (kfs.length === 0) return;
+        let localTime = currentTime - selectedClip.start; let targetTime = -1;
+        if (direction === 1) {
+            let nextKf = kfs.find(kf => kf.time > localTime + 0.05);
+            if (nextKf) targetTime = nextKf.time;
+        } else {
+            let prevKf = [...kfs].reverse().find(kf => kf.time < localTime - 0.05);
+            if (prevKf) targetTime = prevKf.time;
+        }
+        if (targetTime !== -1) {
+            currentTime = selectedClip.start + targetTime;
+            syncUI();
+        }
+    }
+
+    function checkKeyframeState() {
+        if (!selectedClip) return;
+        let localTime = currentTime - selectedClip.start;
+        ['scale', 'opacity', 'rotation', 'posX', 'posY', 'brightness', 'contrast', 'saturate', 'temp', 'hue', 'volume'].forEach(prop => {
+            let btn = document.getElementById(`kf-${prop}`);
+            if (!btn) return;
+            let kfs = (selectedClip.keyframes && selectedClip.keyframes[prop]) ? selectedClip.keyframes[prop] : [];
+            let isAtKf = kfs.some(kf => Math.abs(kf.time - localTime) <= 0.05);
+            btn.style.color = isAtKf ? 'var(--primary)' : 'var(--text-muted)'; btn.innerHTML = isAtKf ? '<i class="fas fa-gem"></i>' : '<i class="far fa-gem"></i>';
+        });
+    }
+
+    function applyStyles(c, el) {
+        if(!el) return;
+        if (!c.keyframes) c.keyframes = {};
+        let localTime = currentTime - c.start;
+        let dynScale = getInterpolatedValue(c, 'scale', c.scale !== undefined ? c.scale : 100, localTime);
+        let dynOpacity = getInterpolatedValue(c, 'opacity', c.opacity !== undefined ? c.opacity : 100, localTime);
+        let dynRotation = getInterpolatedValue(c, 'rotation', c.rotation !== undefined ? c.rotation : 0, localTime);
+        let dynPosX = getInterpolatedValue(c, 'posX', c.posX !== undefined ? c.posX : 50, localTime);
+        let dynPosY = getInterpolatedValue(c, 'posY', c.posY !== undefined ? c.posY : 50, localTime);
+
+        let dynVolume = getInterpolatedValue(c, 'volume', c.volume !== undefined ? c.volume : 100, localTime);
+        let fIn = c.fadeIn || 0; let fOut = c.fadeOut || 0;
+
+        if (fIn > 0 && localTime < fIn) { dynVolume *= (localTime / fIn); }
+        if (fOut > 0 && localTime > (c.dur - fOut)) { dynVolume *= ((c.dur - localTime) / fOut); }
+
+        if (el.tagName === 'VIDEO' || el.tagName === 'AUDIO') {
+            if (c.gainNode) {
+                c.gainNode.gain.value = dynVolume / 100;
+                el.volume = 1.0;
+            } else {
+                el.volume = Math.max(0, Math.min(1, dynVolume / 100));
+            }
+        }
+
+        if (c.type === 'effect') {
+            el.style.left = `0`;
+            el.style.top = `0`;
+            el.style.width = '100%';
+            el.style.height = '100%';
+            el.style.opacity = 1;
+            el.style.zIndex = c.track + 500;
+            let dynF = c.filter || 'none';
+            let baseGray = 0, baseSepia = 0, baseB = 100, baseC = 100, baseS = 100, baseH = 0;
+            switch(dynF) {
+                case "vivid":
+                    baseS = 130;
+                    baseC = 110;
+                    break;
+                case "noir":
+                    baseGray = 100;
+                    baseC = 115;
+                    break;
+                case "sepia":
+                    baseSepia = 100;
+                    baseC = 105;
+                    break;
+                case "warm":
+                    baseSepia = 30;
+                    baseS = 115;
+                    baseC = 105;
+                    baseH = -5;
+                    break;
+                case "cool":
+                    baseS = 80;
+                    baseC = 105;
+                    baseB = 95;
+                    break;
+                case "dramatic":
+                    baseGray = 30;
+                    baseC = 125;
+                    baseB = 90;
+                    break;
+                case "cyberpunk":
+                    baseS = 125;
+                    baseC = 110;
+                    baseH = -15;
+                    break;
+                case "vintage":
+                    baseSepia = 40;
+                    baseC = 95;
+                    baseB = 105;
+                    baseS = 85;
+                    break;
+                case "cinema":
+                    baseC = 115;
+                    baseS = 110;
+                    baseSepia = 15;
+                    baseH = -5;
+                    break;
+            }
+            let strength = dynOpacity / 100;
+            let finalGray = baseGray * strength;
+            let finalSepia = baseSepia * strength;
+            let finalB = 100 + (baseB - 100) * strength;
+            let finalC = 100 + (baseC - 100) * strength;
+            let finalS = 100 + (baseS - 100) * strength;
+            let finalH = baseH * strength;
+            let fullFilterString = `grayscale(${finalGray}%) sepia(${finalSepia}%) brightness(${finalB}%) contrast(${finalC}%) saturate(${finalS}%) hue-rotate(${finalH}deg)`;
+            el.style.backdropFilter = fullFilterString;
+            el.style.webkitBackdropFilter = fullFilterString;
+            el.style.background = 'transparent';
+            el.innerText = '';
+        } else {
+            el.style.left = `${dynPosX}%`;
+            el.style.top = `${dynPosY}%`;
+            el.style.opacity = dynOpacity / 100;
+            if (c.type !== 'text') {
+                el.style.transform = `translate(-50%, -50%) scale(${dynScale / 100}) rotate(${dynRotation}deg)`;
+                let dynB = getInterpolatedValue(c, 'brightness', c.brightness !== undefined ? c.brightness : 100, localTime); let dynC = getInterpolatedValue(c, 'contrast', c.contrast !== undefined ? c.contrast : 100, localTime); let dynS = getInterpolatedValue(c, 'saturate', c.saturate !== undefined ? c.saturate : 100, localTime); let dynT = getInterpolatedValue(c, 'temp', c.temp !== undefined ? c.temp : 100, localTime); let dynH = getInterpolatedValue(c, 'hue', c.hue !== undefined ? c.hue : 0, localTime);
+                let dynF = c.filter || 'none'; let baseGray = 0, baseSepia = dynT > 100 ? (dynT - 100) / 2 : 0, baseB = dynB, baseC = dynC, baseS = dynS, baseH = dynH;
+                switch(dynF) {
+                    case "vivid":
+                        baseS = dynS * 1.3;
+                        baseC = dynC * 1.1;
+                        break;
+                    case "noir":
+                        baseGray = 100;
+                        baseC = dynC * 1.15;
+                        break;
+                    case "sepia":
+                        baseSepia = Math.max(baseSepia, 100);
+                        baseC = dynC * 1.05;
+                        break;
+                    case "warm":
+                        baseSepia = Math.max(baseSepia, 30);
+                        baseS = dynS * 1.15;
+                        baseC = dynC * 1.05;
+                        baseH = dynH - 5;
+                        break;
+                    case "cool":
+                        baseS = dynS * 0.80;
+                        baseC = dynC * 1.05;
+                        baseB = dynB * 0.95;
+                        break;
+                    case "dramatic":
+                        baseGray = 30;
+                        baseC = dynC * 1.25;
+                        baseB = dynB * 0.9;
+                        break;
+                    case "cyberpunk":
+                        baseS = dynS * 1.25;
+                        baseC = dynC * 1.1;
+                        baseH = dynH - 15;
+                        break;
+                    case "vintage":
+                        baseSepia = Math.max(baseSepia, 40);
+                        baseC = dynC * 0.95;
+                        baseB = dynB * 1.05;
+                        baseS = dynS * 0.85;
+                        break;
+                    case "cinema":
+                        baseC = dynC * 1.15;
+                        baseS = dynS * 1.1;
+                        baseSepia = Math.max(baseSepia, 15);
+                        baseH = dynH - 5;
+                        break;
+                }
+                let fullFilterString = `grayscale(${baseGray}%) sepia(${baseSepia}%) brightness(${baseB}%) contrast(${baseC}%) saturate(${baseS}%) hue-rotate(${baseH}deg)`; el.style.filter = fullFilterString; el.style.webkitFilter = fullFilterString;
+            } else {
+                el.innerText = c.text;
+                el.style.fontFamily = c.fontFamily;
+                el.style.fontSize = `${c.fontSize}px`; if (!c.isCaption) { el.style.background = 'none'; el.style.webkitBackgroundClip = 'unset'; el.style.webkitTextFillColor = 'unset'; el.style.color = c.color; }
+            }
+        }
+    }
+
+    function selectClip(id) {
+        selectedClip = clips.find(c => c.id === id);
+        renderTimeline();
+        document.querySelectorAll('.media-element, .text-element, .effect-element').forEach(e => e.classList.remove('active'));
+        if (selectedClip) {
+            let speedGroup = document.getElementById('speed-group');
+            if (speedGroup) {
+                if (selectedClip.type === 'video' || selectedClip.type === 'audio') {
+                    speedGroup.style.display = 'block';
+                    document.getElementById('speedSlider').value = selectedClip.speed || 1.0;
+                    document.getElementById('val-speed').innerText = (selectedClip.speed || 1.0).toFixed(1) + 'x';
+                }
+                else {
+                        speedGroup.style.display = 'none';
+                }
+            }
+            let el = document.getElementById(`media-${selectedClip.id}`); if(el) el.classList.add('active');
+            let cType = document.getElementById('curveType');
+            if (cType) cType.value = selectedClip.curveType || 'ease-in-out';
+
+            const setTabVis = (tabId, show) => {
+                let t = document.getElementById(tabId);
+                if (t) t.style.display = show ? 'inline-block' : 'none';
+            };
+
+            if (selectedClip.type === 'effect') {
+                let opEl = document.getElementById('opacity');
+                if(opEl) opEl.value = selectedClip.opacity !== undefined ? selectedClip.opacity : 100;
+                setTabVis('tab-basic', true);
+                setTabVis('tab-audio', false);
+                setTabVis('tab-adjust', false);
+                setTabVis('tab-filters', true);
+                setTabVis('tab-transitions', false);
+                setTabVis('tab-text', false);
+                setTabVis('tab-caption', false);
+                setTabVis('tab-motion', true);
+                let fType = document.getElementById('filterType');
+                if(fType) fType.value = selectedClip.filter || "none";
+                switchTab('filters');
+            } else if (selectedClip.type === 'video' || selectedClip.type === 'image') {
+                let scEl = document.getElementById('scale');
+                if(scEl) scEl.value = selectedClip.scale !== undefined ? selectedClip.scale : 100;
+                let opEl = document.getElementById('opacity');
+                if(opEl) opEl.value = selectedClip.opacity !== undefined ? selectedClip.opacity : 100;
+                let rotEl = document.getElementById('rotation');
+                if(rotEl) rotEl.value = selectedClip.rotation !== undefined ? selectedClip.rotation : 0;
+                setTabVis('tab-basic', true); setTabVis('tab-adjust', true);
+                setTabVis('tab-filters', true);
+                setTabVis('tab-transitions', true);
+                setTabVis('tab-text', false);
+                setTabVis('tab-caption', false);
+                setTabVis('tab-motion', true);
+
+                if (selectedClip.type === 'video') {
+                    setTabVis('tab-audio', true);
+                    let volEl = document.getElementById('volume');
+                    if(volEl) volEl.value = selectedClip.volume !== undefined ? selectedClip.volume : 100;
+                    let fInEl = document.getElementById('fadeIn');
+                    if(fInEl) fInEl.value = selectedClip.fadeIn !== undefined ? selectedClip.fadeIn : 0;
+                    let fOutEl = document.getElementById('fadeOut');
+                    if(fOutEl) fOutEl.value = selectedClip.fadeOut !== undefined ? selectedClip.fadeOut : 0;
+                } else {
+                    setTabVis('tab-audio', false);
+                }
+
+                let transIn = selectedClip.transitionIn;
+                setTransitionUI('in', transIn ? transIn.type : 'none', true);
+                let inGroup = document.getElementById('transInDurGroup');
+                if(inGroup) inGroup.style.display = transIn ? 'block' : 'none';
+                if (transIn) {
+                    let inDur = document.getElementById('transInDur');
+                    if(inDur) inDur.value = transIn.dur;
+                    let inVal = document.getElementById('transInDurVal');
+                    if(inVal) inVal.innerText = transIn.dur;
+                }
+                let transOut = selectedClip.transitionOut;
+                setTransitionUI('out', transOut ? transOut.type : 'none', true);
+                let outGroup = document.getElementById('transOutDurGroup');
+                if(outGroup) outGroup.style.display = transOut ? 'block' : 'none';
+                if (transOut) {
+                    let outDur = document.getElementById('transOutDur');
+                    if(outDur) outDur.value = transOut.dur;
+                    let outVal = document.getElementById('transOutDurVal');
+                    if(outVal) outVal.innerText = transOut.dur;
+                }
+                ['brightness', 'contrast', 'saturate', 'temp', 'hue'].forEach(p => {
+                    let pEl = document.getElementById(p);
+                    if(pEl) pEl.value = selectedClip[p] !== undefined ? selectedClip[p] : (['hue', 'rotation'].includes(p) ? 0 : 100);
+                    let v = document.getElementById(`val-${p}`);
+                    if(v) v.innerText = selectedClip[p] !== undefined ? selectedClip[p] : (['hue', 'rotation'].includes(p) ? 0 : 100);
+                });
+                let fType = document.getElementById('filterType');
+                if(fType) fType.value = selectedClip.filter || "none";
+                switchTab('basic');
+            } else if (selectedClip.type === 'text') {
+                let scEl = document.getElementById('scale');
+                if(scEl) scEl.value = selectedClip.scale !== undefined ? selectedClip.scale : 100;
+                let opEl = document.getElementById('opacity');
+                if(opEl) opEl.value = selectedClip.opacity !== undefined ? selectedClip.opacity : 100;
+                let rotEl = document.getElementById('rotation');
+                if(rotEl) rotEl.value = selectedClip.rotation !== undefined ? selectedClip.rotation : 0;
+                setTabVis('tab-basic', true);
+                setTabVis('tab-audio', false);
+                setTabVis('tab-adjust', false);
+                setTabVis('tab-filters', false);
+                setTabVis('tab-transitions', false);
+                setTabVis('tab-motion', true);
+                if (selectedClip.isCaption) {
+                    setTabVis('tab-text', false);
+                    setTabVis('tab-caption', true);
+                    let capText = document.getElementById('captionTextContent');
+                    if(capText) capText.value = selectedClip.text;
+                    let capSize = document.getElementById('captionFontSize');
+                    if(capSize) capSize.value = selectedClip.fontSize;
+                    setCaptionStyleUI(selectedClip.captionStyle || 'karaoke', true);
+                    setPaletteColor(selectedClip.color || '#ffffff', 'color', 'colorPaletteMain', true);
+                    setPaletteColor(selectedClip.activeColor || '#ea4335', 'activeColor', 'colorPaletteActive', true);
+                    let fontList = document.getElementById('captionFontList');
+                    if(fontList) {
+                        fontList.querySelectorAll('.font-item').forEach(e => e.classList.remove('active'));
+                        let activeFont = fontList.querySelector(`.font-item[data-val="${selectedClip.fontFamily}"]`);
+                        if(activeFont) activeFont.classList.add('active');
+                    } switchTab('caption');
+                }
+                else {
+                    setTabVis('tab-text', true);
+                    setTabVis('tab-caption', false);
+                    let tCont = document.getElementById('textContent');
+                    if(tCont) tCont.value = selectedClip.text;
+                    let tCol = document.getElementById('color');
+                    if(tCol) tCol.value = selectedClip.color || '#ffffff';
+                    let tFont = document.getElementById('fontFamily');
+                    if(tFont) tFont.value = selectedClip.fontFamily;
+                    let tSize = document.getElementById('fontSize');
+                    if(tSize) tSize.value = selectedClip.fontSize;
+                    switchTab('text');
+                }
+            } else if (selectedClip.type === 'audio') {
+                setTabVis('tab-basic', false);
+                setTabVis('tab-adjust', false);
+                setTabVis('tab-filters', false);
+                setTabVis('tab-transitions', false);
+                setTabVis('tab-text', false);
+                setTabVis('tab-caption', false);
+                setTabVis('tab-motion', false);
+                setTabVis('tab-audio', true);
+                let volEl = document.getElementById('volume');
+                if(volEl) volEl.value = selectedClip.volume !== undefined ? selectedClip.volume : 100;
+                let fInEl = document.getElementById('fadeIn');
+                if(fInEl) fInEl.value = selectedClip.fadeIn !== undefined ? selectedClip.fadeIn : 0;
+                let fOutEl = document.getElementById('fadeOut');
+                if(fOutEl) fOutEl.value = selectedClip.fadeOut !== undefined ? selectedClip.fadeOut : 0;
+                switchTab('audio');
+            }
+
+            checkKeyframeState();
+            openSheet(selectedClip.name);
+        }
+    }
+
+
+    function startDragPreview(e) {
+        let targetId = parseFloat(e.target.id.replace('media-', ''));
+        if (targetId) selectClip(targetId);
+        if (!selectedClip || selectedClip.type === 'effect') return;
+        previewDraggingEl = e.target; pStartX = e.touches ? e.touches[0].clientX : e.clientX; pStartY = e.touches ? e.touches[0].clientY : e.clientY; pInitialPosX = selectedClip.posX || 50;
+        pInitialPosY = selectedClip.posY || 50;
+        document.addEventListener('mousemove', dragPreviewElement);
+        document.addEventListener('mouseup', stopDragPreview);
+        document.addEventListener('touchmove', dragPreviewElement, {passive: false});
+        document.addEventListener('touchend', stopDragPreview);
+    }
+
+    function dragPreviewElement(e) {
+        if (!previewDraggingEl || !selectedClip || selectedClip.type === 'effect') return; e.preventDefault();
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        let dx = clientX - pStartX; let dy = clientY - pStartY;
+        let rect = document.getElementById('previewArea').getBoundingClientRect();
+        let newPosX = Math.max(-50, Math.min(150, pInitialPosX + ((dx / rect.width) * 100)));
+        let newPosY = Math.max(-50, Math.min(150, pInitialPosY + ((dy / rect.height) * 100)));
+        previewDraggingEl.style.left = `${newPosX}%`; previewDraggingEl.style.top = `${newPosY}%`;
+        previewDraggingEl.setAttribute('data-pending-x', newPosX);
+        previewDraggingEl.setAttribute('data-pending-y', newPosY);
+    }
+
+    function stopDragPreview() {
+        if (previewDraggingEl && selectedClip) {
+            let finalX = previewDraggingEl.getAttribute('data-pending-x');
+            let finalY = previewDraggingEl.getAttribute('data-pending-y');
+            if (finalX !== null && finalY !== null) {
+                updateProperty('posX', parseFloat(finalX));
+                updateProperty('posY', parseFloat(finalY));
+            }
+        }
+        previewDraggingEl = null; document.removeEventListener('mousemove', dragPreviewElement); document.removeEventListener('mouseup', stopDragPreview); document.removeEventListener('touchmove', dragPreviewElement); document.removeEventListener('touchend', stopDragPreview);
+    }
+
+
+    function syncUI() {
+        let tDisp = document.getElementById('timeDisplay');
+        if(tDisp) tDisp.innerText = `${formatTime(currentTime)} / ${formatTime(totalDuration)}`;
+        let ph = document.getElementById('playhead');
+        if(ph) ph.style.left = (currentTime * zoom) + 'px';
+        const container = document.getElementById('timelineScroll');
+        if (container && (currentTime * zoom) > container.scrollLeft + window.innerWidth - 50) container.scrollLeft = (currentTime * zoom) - 50;
+
+        clips.forEach(c => {
+            let el = document.getElementById(`media-${c.id}`); if(!el) return;
+            let inRange = currentTime >= c.start && currentTime < (c.start + c.dur);
+            if (inRange) applyStyles(c, el);
+            if (c.type !== 'audio') {
+                el.style.display = inRange ? 'block' : 'none';
+                el.style.visibility = inRange ? 'visible' : 'hidden';
+            }
+            if ((el.tagName === 'VIDEO' || el.tagName === 'AUDIO') && inRange) {
+                let targetTime = ((currentTime - c.start) * (c.speed || 1.0)) + c.sourceOffset;
+                if (el.playbackRate !== (c.speed || 1.0)) el.playbackRate = (c.speed || 1.0);
+                if (isPlaying) { if (el.paused) el.play().catch(e=>{}); }
+                else { if (!el.paused) el.pause(); if(Math.abs(el.currentTime - targetTime) > 0.1) el.currentTime = targetTime; }
+            } else if (el.tagName === 'VIDEO' || el.tagName === 'AUDIO') {
+                el.pause();
+            }
+        });
+
+        if (selectedClip && document.getElementById('propsSheet').classList.contains('active')) {
+            let localTime = currentTime - selectedClip.start;
+            ['scale', 'opacity', 'rotation', 'brightness', 'contrast', 'saturate', 'temp', 'hue', 'volume'].forEach(prop => {
+                let slider = document.getElementById(prop);
+                if (slider) { let cv = getInterpolatedValue(selectedClip, prop, selectedClip[prop] !== undefined ? selectedClip[prop] : (['hue', 'rotation'].includes(prop) ? 0 : 100), localTime); slider.value = cv; let valDisplay = document.getElementById(`val-${prop}`); if (valDisplay) valDisplay.innerText = Math.round(cv); }
+            });
+            let filterSelect = document.getElementById('filterType'); if(filterSelect) filterSelect.value = selectedClip.filter || 'none';
+            checkKeyframeState();
+        }
+    }
+
+    function renderTimeline() {
+        document.querySelectorAll('.track').forEach(t => Array.from(t.children).forEach(c => { if(c.classList.contains('clip')) c.remove(); }));
+        document.getElementById('placeholder').style.display = clips.length === 0 ? 'block' : 'none';
+        totalDuration = clips.length > 0 ? Math.max(...clips.map(c => c.start + c.dur)) : 0; drawRuler();
+
+        clips.forEach(c => {
+            const track = document.querySelector(`.track[data-track="${c.track}"]`); if(!track) return;
+            const div = document.createElement('div');
+            div.className = `clip ${c.type} ${(selectedClip && selectedClip.id === c.id) ? 'active' : ''}`;
+            div.style.left = (c.start * zoom) + 'px';
+            div.style.width = (c.dur * zoom) + 'px';
+            let icon = c.type === 'video' ? 'film' : c.type === 'audio' ? 'music' : c.type === 'text' ? 'font' : (c.type === 'effect' ? 'magic' : 'image');
+            div.innerHTML = `<i class="fas fa-${icon}"></i> <span>${c.name.substring(0,8)}</span>`;
+
+            if (c.keyframes) {
+            let kfTimes = new Set(); ['scale', 'opacity', 'rotation', 'posX', 'posY', 'brightness', 'contrast', 'saturate', 'temp', 'hue', 'volume'].forEach(prop => { if (c.keyframes[prop]) c.keyframes[prop].forEach(kf => kfTimes.add(kf.time)); }); kfTimes.forEach(t => { if (t > 0.05 && t <= c.dur) { let kfIcon = document.createElement('i'); kfIcon.className = 'fas fa-gem keyframe-marker'; kfIcon.style.left = `${(t / c.dur) * 100}%`; div.appendChild(kfIcon); } }); }
+
+            if (c.type === 'text' || c.type === 'effect') {
+                let hL = document.createElement('div'); hL.className = 'trim-handle left';
+                let hR = document.createElement('div'); hR.className = 'trim-handle right';
+                div.appendChild(hL); div.appendChild(hR);
+                const startTrim = (e, side) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    let startX = e.touches ? e.touches[0].clientX : e.clientX;
+                    let originalStart = c.start;
+                    let originalDur = c.dur;
+                    const moveTrim = (me) => {
+                        let currentX = me.touches ? me.touches[0].clientX : me.clientX; let dx = (currentX - startX) / zoom;
+                        const SNAP_THRESHOLD = 15 / zoom;
+                        let snapPoints = [0, currentTime];
+                         clips.forEach(otherClip => {
+                            if (otherClip.id !== c.id) {
+                                snapPoints.push(otherClip.start);
+                                snapPoints.push(otherClip.start + otherClip.dur);
+                            }
+                         });
+                        if (side === 'right') {
+                            let rawEnd = originalStart + originalDur + dx;
+                            let snappedEnd = rawEnd; let minDiff = SNAP_THRESHOLD;
+                            snapPoints.forEach(pt => {
+                                if (Math.abs(rawEnd - pt) < minDiff) {
+                                    minDiff = Math.abs(rawEnd - pt);
+                                    snappedEnd = pt;
+                                }
+                            });
+                        c.dur = Math.max(0.5, snappedEnd - c.start);
+                    }
+                        else {
+                            let rawStart = originalStart + dx;
+                            let snappedStart = rawStart;
+                            let minDiff = SNAP_THRESHOLD;
+                            snapPoints.forEach(pt => {
+                                if (Math.abs(rawStart - pt) < minDiff) {
+                                    minDiff = Math.abs(rawStart - pt);
+                                    snappedStart = pt;
+                                }
+                            });
+                        let newStart = Math.min(originalStart + originalDur - 0.5, Math.max(0, snappedStart));
+                        c.start = newStart;
+                        c.dur = originalStart + originalDur - newStart;
+                    }
+                        div.style.left = (c.start * zoom) + 'px';
+                        div.style.width = (c.dur * zoom) + 'px';
+                        syncUI();
+                    };
+                    const stopTrim = () => {
+                        document.removeEventListener('mousemove', moveTrim);
+                        document.removeEventListener('mouseup', stopTrim);
+                        document.removeEventListener('touchmove', moveTrim);
+                        document.removeEventListener('touchend', stopTrim);
+                        save();
+                        renderTimeline();
+                    };
+                    document.addEventListener('mousemove', moveTrim);
+                    document.addEventListener('mouseup', stopTrim);
+                    document.addEventListener('touchmove', moveTrim, {passive: false});
+                    document.addEventListener('touchend', stopTrim);
+                };
+                hL.addEventListener('mousedown', (e) => startTrim(e, 'left'));
+                hL.addEventListener('touchstart', (e) => startTrim(e, 'left'), {passive: false});
+                hR.addEventListener('mousedown', (e) => startTrim(e, 'right'));
+                hR.addEventListener('touchstart', (e) => startTrim(e, 'right'), {passive: false});
+            }
+
+            let pressTimer; let isDragging = false;
+            let startX, startY, originalStart;
+            const startInteraction = (e) => {
+                if (e.type === 'touchstart') e.preventDefault(); startX = e.touches ? e.touches[0].clientX : e.clientX; startY = e.touches ? e.touches[0].clientY : e.clientY; originalStart = c.start; isDragging = false;
+                pressTimer = setTimeout(() => {
+                    isDragging = true;
+                    div.style.opacity = '0.7';
+                    div.style.border = '2px solid var(--accent)';
+                }, 400);
+                document.addEventListener('mousemove', moveInteraction);
+                document.addEventListener('mouseup', stopInteraction);
+                document.addEventListener('touchmove', moveInteraction, {passive: false});
+                document.addEventListener('touchend', stopInteraction);
+            };
+
+            const moveInteraction = (me) => {
+                let currentX = me.touches ? me.touches[0].clientX : me.clientX;
+                let currentY = me.touches ? me.touches[0].clientY : me.clientY;
+                if (!isDragging) {
+                    if (Math.abs(currentX - startX) > 10 || Math.abs(currentY - startY) > 10) clearTimeout(pressTimer); return;
+                }
+                if (me.type === 'touchmove') me.preventDefault(); let dx = currentX - startX; let rawNewStart = Math.max(0, originalStart + (dx / zoom));
+                const SNAP_THRESHOLD = 15 / zoom;
+                let snapPoints = [0, currentTime];
+                clips.forEach(otherClip => {
+                    if (otherClip.id !== c.id) {
+                        snapPoints.push(otherClip.start);
+                        snapPoints.push(otherClip.start + otherClip.dur);
+                    }
+                });
+                let bestStartSnap = rawNewStart;
+                let minDiffStart = SNAP_THRESHOLD;
+                let bestEndSnap = rawNewStart + c.dur;
+                let minDiffEnd = SNAP_THRESHOLD;
+                snapPoints.forEach(pt => {
+                    if (Math.abs(rawNewStart - pt) < minDiffStart) {
+                        minDiffStart = Math.abs(rawNewStart - pt);
+                        bestStartSnap = pt;
+                    }
+                    if (Math.abs((rawNewStart + c.dur) - pt) < minDiffEnd) {
+                        minDiffEnd = Math.abs((rawNewStart + c.dur) - pt);
+                        bestEndSnap = pt;
+                    }
+                });
+                if (minDiffStart < SNAP_THRESHOLD) { c.start = bestStartSnap; } else if (minDiffEnd < SNAP_THRESHOLD) { c.start = bestEndSnap - c.dur; } else { c.start = rawNewStart; }
+                div.style.left = (c.start * zoom) + 'px';
+                let rect = document.getElementById('tracksArea').getBoundingClientRect();
+                let yRelative = currentY - rect.top;
+                let newTrack = Math.max(0, Math.min(3, Math.floor(yRelative / 54)));
+                if (c.track !== newTrack) {
+                    c.track = newTrack;
+                    let newTrackEl = document.querySelector(`.track[data-track="${newTrack}"]`);
+                    if (newTrackEl && div.parentElement !== newTrackEl) {
+                        newTrackEl.appendChild(div);
+                        applyStyles(c, document.getElementById(`media-${c.id}`));
+                    }
+                }
+                syncUI();
+            };
+
+            const stopInteraction = () => {
+                clearTimeout(pressTimer);
+                div.style.opacity = '';
+                div.style.border = '';
+                document.removeEventListener('mousemove', moveInteraction);
+                document.removeEventListener('mouseup', stopInteraction);
+                document.removeEventListener('touchmove', moveInteraction);
+                document.removeEventListener('touchend', stopInteraction);
+                if (!isDragging) { selectClip(c.id); } else { save(); renderTimeline(); }
+            };
+            div.addEventListener('mousedown', startInteraction);
+            div.addEventListener('touchstart', startInteraction, {passive: false});
+            track.appendChild(div);
+        });
+        syncUI();
+    }
+
+    function createElement(c) {
+    const area = document.getElementById('previewArea');
+    let existingEl = document.getElementById(`media-${c.id}`);
+    if (existingEl) existingEl.remove();
+
+    let el = document.createElement(c.type === 'video' ? 'video' : (c.type === 'image' ? 'img' : (c.type === 'audio' ? 'audio' : 'div')));
+
+    if (c.type === 'video' || c.type === 'audio') {
+        el.src = c.path;
+        el.playsInline = true;
+        el.preload = 'auto';
+        el.muted = false;
+        el.crossOrigin = "anonymous";
+    } else if (c.type === 'image') {
+        el.src = c.path;
+    } else if (c.type === 'text') {
+        el.innerText = c.text;
+    }
+
+    if (c.type === 'text') el.className = 'text-element';
+    else if (c.type === 'effect') el.className = 'effect-element';
+    else el.className = 'media-element';
+
+    el.id = `media-${c.id}`;
+    el.style.position = 'absolute';
+
+    if(c.type === 'audio') { el.style.display = 'none'; } else { el.style.display = 'block'; }
+
+    if(c.type !== 'effect') {
+        el.addEventListener('mousedown', startDragPreview);
+        el.addEventListener('touchstart', startDragPreview, {passive: false});
+    }
+    area.appendChild(el);
+    if (c.type === 'video' || c.type === 'audio') {
+        try {
+            initAudio();
+            c.audioSource = audioCtx.createMediaElementSource(el);
+            c.gainNode = audioCtx.createGain();
+            c.audioSource.connect(c.gainNode);
+            c.gainNode.connect(audioCtx.destination);
+        } catch (e) {
+            console.log("ملاحظة: لم يتم ربط Web Audio API لهذا العنصر", e);
+        }
+    }
+
+    applyStyles(c, el);
+}
+    function playLoop(timestamp) {
+        if (!isPlaying) return;
+        if (!lastTimestamp) lastTimestamp = timestamp;
+        let deltaTime = (timestamp - lastTimestamp) / 1000;
+        lastTimestamp = timestamp; currentTime += deltaTime;
+        if (currentTime >= totalDuration) {
+            currentTime = 0;
+            togglePlay();
+        } else {
+            syncUI();
+            animationFrameId = requestAnimationFrame(playLoop);
+        }
+    }
+    function togglePlay() {
+        initAudio();
+        let icon = document.getElementById('playIcon');
+        isPlaying = !isPlaying;
+        if(icon) icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        if (isPlaying) {
+            if (currentTime >= totalDuration) currentTime = 0;
+            lastTimestamp = performance.now();
+            animationFrameId = requestAnimationFrame(playLoop);
+        } else {
+            cancelAnimationFrame(animationFrameId);
+            lastTimestamp = 0;
+            syncUI();
+        }
+    }
+
+    function drawRuler() {
+        const cvs = document.getElementById('rulerCanvas');
+        if(!cvs) return;
+        const ctx = cvs.getContext('2d');
+        cvs.style.position = 'static';
+        let maxTime = Math.max(totalDuration, 30);
+        let totalW = (maxTime * zoom) + window.innerWidth;
+        const dpr = window.devicePixelRatio || 1;
+        cvs.width = totalW * dpr;
+        cvs.height = 20 * dpr;
+        cvs.style.width = totalW + 'px';
+        cvs.style.height = '20px';
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, totalW, 20);
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        let maxSecs = Math.ceil(maxTime + (window.innerWidth / zoom));
+        for (let i = 0; i <= maxSecs; i++) {
+            let x = i * zoom;
+            if (zoom === 10) {
+                if (i % 2 === 0) {
+                    ctx.fillRect(x, 10, 1, 10);
+                    ctx.fillText(i + 's', x, 0);
+                }
+            } else if (zoom === 20) {
+                ctx.fillRect(x, 10, 1, 10);
+                ctx.fillText(i + 's', x, 0);
+            } else if (zoom === 40) {
+                ctx.fillRect(x, 10, 1, 10);
+                ctx.fillText(i + 's', x, 0);
+                ctx.fillRect(x + (zoom / 2), 15, 1, 5);
+            } else if (zoom === 80) {
+                ctx.fillRect(x, 10, 1, 10);
+                ctx.fillText(i + 's', x, 0);
+                for (let j = 1; j < 10; j++) {
+                    let h = (j === 5) ? 6 : 3;
+                    ctx.fillRect(x + (zoom * j / 10), 20 - h, 1, h);
+                }
+            } else if (zoom === 160) {
+                ctx.fillRect(x, 10, 1, 10);
+                ctx.fillText(i + '.0s', x, 0);
+                ctx.fillRect(x + (zoom / 2), 10, 1, 10);
+                ctx.fillText(i + '.5s', x + (zoom / 2), 0);
+            }
+        }
+        let tArea = document.getElementById('tracksArea');
+        if(tArea) {
+            tArea.style.minWidth = totalW + 'px';
+            tArea.style.width = totalW + 'px';
+        }
+    }
+    const rulerCanvas = document.getElementById('rulerCanvas');
+    function seekTimeline(e) {
+        let rect = rulerCanvas.getBoundingClientRect();
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        currentTime = Math.max(0, (clientX - rect.left) / zoom);
+        syncUI();
+    }
+    if(rulerCanvas) {
+        rulerCanvas.addEventListener('mousedown', (e) => {
+            seekTimeline(e); rulerCanvas.addEventListener('mousemove', seekTimeline);
+        });
+        rulerCanvas.addEventListener('touchstart', (e) => {
+            seekTimeline(e);
+            rulerCanvas.addEventListener('touchmove', seekTimeline, {passive: false});
+        });
+    }
+    document.addEventListener('mouseup', () => {
+        if(rulerCanvas) rulerCanvas.removeEventListener('mousemove', seekTimeline);
+    });
+    document.addEventListener('touchend', () => {
+        if(rulerCanvas) rulerCanvas.removeEventListener('touchmove', seekTimeline);
+    });
+
+    function requestMedia(type) {
+        if(window.MediaPickerChannel) window.MediaPickerChannel.postMessage(type);
+    }
+    window.addMediaFromFlutter = function(type, encodedData, encodedName, duration) {
+        try {
+            let rawData = JSON.parse(decodeURIComponent(escape(window.atob(encodedData))));
+            let trackId = type === 'audio' ? 3 : (type === 'video' ? 1 : 2);
+            if (type === 'video' && clips.some(c => c.track === 1 && currentTime >= c.start && currentTime < (c.start + c.dur))) trackId = 2;
+            let clip = {
+                id: Date.now(),
+                type: type,
+                path: rawData.previewPath,
+                exportPath: rawData.exportPath,
+                name: decodeURIComponent(escape(window.atob(encodedName))),
+                start: currentTime,
+                dur: duration,
+                track: trackId,
+                sourceOffset: 0,
+                scale: type === 'video' ? 100 : 50,
+                rotation: 0,
+                opacity: 100,
+                brightness: 100,
+                contrast: 100,
+                saturate: 100,
+                temp: 100,
+                hue: 0,
+                volume: 100,
+                fadeIn: 0,
+                fadeOut: 0,
+                filter: "none",
+                posX: 50,
+                posY: 50,
+                transitionIn: null,
+                transitionOut: null,
+                keyframes: {},
+                speed: 1.0
+            };
+            clips.push(clip);
+            createElement(clip);
+            renderTimeline();
+            save();
+        }
+        catch (error) {
+            alert(" خطأ أثناء إضافة الميديا: " + error.message);
+        }
+    };
+    function addText() {
+        let clip = {
+            id: Date.now(),
+            type: 'text',
+            name: 'نص',
+            start: currentTime,
+            dur: 3,
+            track: 0,
+            text: 'نص جديد',
+            color: '#ffffff',
+            fontSize: 30,
+            fontFamily: 'Cairo',
+            fontUrl: '',
+            scale: 100,
+            rotation: 0,
+            opacity: 100,
+            posX: 50,
+            posY: 50,
+            transitionIn: null,
+            transitionOut: null,
+            keyframes: {}
+        };
+        clips.push(clip);
+        createElement(clip);
+        renderTimeline();
+        save();
+    }
+    function applyOrSpawnEffect(val) {
+        if (!selectedClip) return;
+        if (selectedClip.type === 'effect') {
+            updateProperty('filter', val);
+        } else {
+            if (val === 'none') {
+                updateProperty('filter', 'none');
+                return;
+            }
+            let effectClip = {
+                id: Date.now(),
+                type: 'effect',
+                name: 'تأثير ',
+                start: currentTime,
+                dur: 3,
+                track: 0,
+                filter: val,
+                scale: 100,
+                rotation: 0,
+                opacity: 100,
+                transitionIn: null,
+                transitionOut: null,
+                keyframes: {}
+            };
+            clips.push(effectClip);
+            createElement(effectClip);
+            renderTimeline();
+            save();
+            setTimeout(() => selectClip(effectClip.id), 50);
+        }
+    }
+    function requestAutoCaption() {
+        let mediaClips = clips.filter(c => c.type === 'video' || c.type === 'audio');
+        if (mediaClips.length === 0) return alert("الرجاء إضافة مقاطع فيديو أو صوت أولاً!");
+        let projectData = JSON.stringify({ elements: clips });
+        if (window.AutoCaptionChannel) {
+            window.AutoCaptionChannel.postMessage(projectData);
+            alert("جاري الاستخراج...");
+        }
+    }
+    window.receiveCaptionsFromFlutter = function(captionsJsonString) {
+        try {
+            let rawData = JSON.parse(captionsJsonString);
+            let lines = rawData.captions.split('\n');
+            let firstCaptionTime = -1;
+            function timeToSeconds(timeStr) {
+                let parts = timeStr.split(':');
+                let seconds = parseFloat(parts[parts.length - 1].replace(',', '.'));
+                if (parts.length >= 2) seconds += parseInt(parts[parts.length - 2]) * 60;
+                if (parts.length >= 3) seconds += parseInt(parts[parts.length - 3]) * 3600;
+                return seconds;
+            }
+            lines.forEach((line, index) => {
+                if (line.includes('-->')) {
+                    let times = line.split('-->');
+                    let start = timeToSeconds(times[0].trim());
+                    let end = timeToSeconds(times[1].trim());
+                    if (firstCaptionTime === -1) firstCaptionTime = start;
+                    let textParts = [];
+                    let j = index + 1;
+                    while (j < lines.length && lines[j].trim() !== "" && !lines[j].includes('-->')) {
+                        textParts.push(lines[j].trim());
+                        j++;
+                    }
+                    let text = textParts.join(" ");
+                    if (text.trim() !== "") {
+                        let newClip = {
+                            id: Date.now() + Math.random(),
+                            type: 'text',
+                            name: text,
+                            start: start,
+                            dur: Math.max(end - start, 0.6),
+                            track: 3,
+                            text: text,
+                            color: '#ffffff',
+                            activeColor: '#ea4335',
+                            fontSize: 28,
+                            fontFamily: 'Cairo',
+                            fontUrl: '',
+                            scale: 100,
+                            rotation: 0,
+                            opacity: 100,
+                            posX: 50,
+                            posY: 80,
+                            isCaption: true,
+                            captionStyle: 'karaoke',
+                            transitionIn: null,
+                            transitionOut: null,
+                            keyframes: {}
+                        };
+                        clips.push(newClip);
+                        createElement(newClip);
+                    }
+                }
+            });
+            renderTimeline();
+            if (firstCaptionTime !== -1) currentTime = firstCaptionTime;
+            syncUI();
+            save();
+            alert(" تمت الترجمة!");
+        }
+        catch (e) {
+            alert("خطأ: " + e.message);
+        }
+    };
+
+    function resetProp(prop, defaultVal) {
+        let el = document.getElementById(prop);
+        if(el) el.value = defaultVal;
+        updateProperty(prop, defaultVal);
+    }
+    function resetColor(prop, defaultVal) {
+        let targetId = (prop === 'filter') ? 'filterType' : prop;
+        let el = document.getElementById(targetId);
+        if(el) el.value = defaultVal;
+        if (prop === 'filter') {
+            applyOrSpawnEffect(defaultVal);
+        }
+        else { updateProperty(prop, defaultVal); }
+    }
+
+    async function loadGoogleFonts() {
+        try {
+            const goldArabicFonts = ["Cairo", "Almarai", "Tajawal", "Changa", "El Messiri", "Reem Kufi", "Amiri", "IBM Plex Sans Arabic", "Lateef", "Katibeh"];
+            let res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${GOOGLE_FONTS_API_KEY}&sort=popularity`);
+            let data = await res.json();
+            availableFonts = data.items.slice(0, 150);
+            let selectText = document.getElementById('fontFamily');
+            let captionFontList = document.getElementById('captionFontList');
+            if(selectText) selectText.innerHTML = '';
+            if(captionFontList) captionFontList.innerHTML = '';
+            availableFonts.forEach(font => {
+                let isGoldArabic = goldArabicFonts.includes(font.family);
+                let fontUrl = (font.files['700'] || font.files['regular']).replace("http://", "https://");
+                if(selectText) {
+                    let opt = document.createElement('option');
+                    opt.value = font.family;
+                    opt.innerText = isGoldArabic ? `${font.family} (AR)` : font.family;
+                    opt.setAttribute('data-url', fontUrl);
+                    selectText.appendChild(opt);
+                }
+                if(captionFontList) {
+                    let fontDiv = document.createElement('div');
+                    fontDiv.className = 'font-item';
+                    fontDiv.setAttribute('data-val', font.family);
+                    fontDiv.innerText = isGoldArabic ? `${font.family} ` : font.family;
+                    fontDiv.style.fontFamily = `'${font.family}', sans-serif`;
+                    fontDiv.onclick = () => {
+                        captionFontList.querySelectorAll('.font-item').forEach(el => el.classList.remove('active'));
+                        fontDiv.classList.add('active');
+                        let fontFace = new FontFace(font.family, `url(${fontUrl})`);
+                        fontFace.load().then(function(loadedFace) {
+                            document.fonts.add(loadedFace);
+                            updateProperty('fontFamily', font.family);
+                            updateProperty('fontUrl', fontUrl);
+                            save();
+                        });
+                    };
+                    captionFontList.appendChild(fontDiv);
+                }
+            });
+        }
+        catch(e) {}
+    }
+    loadGoogleFonts();
+
+    function setPaletteColor(color, prop, containerId, uiOnly = false) {
+        let container = document.getElementById(containerId);
+        if(container) {
+            container.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active'));
+            let swatch = container.querySelector(`.color-swatch[data-val="${color}"]`);
+            if(swatch) swatch.classList.add('active');
+        }
+        if(!uiOnly) {
+            updateProperty(prop, color);
+            save();
+        }
+    }
+    function setCaptionStyleUI(style, uiOnly = false) {
+        let list = document.getElementById('capStyleList');
+        if(list) {
+            list.querySelectorAll('.ui-item').forEach(el => el.classList.remove('active'));
+            let item = list.querySelector(`.ui-item[data-val="${style}"]`);
+            if(item) item.classList.add('active');
+        }
+        if(!uiOnly) {
+            updateProperty('captionStyle', style);
+            save();
+        }
+    }
+    function setTransitionUI(direction, val, uiOnly = false) {
+        let list = document.getElementById(direction === 'in' ? 'transInList' : 'transOutList');
+        if(list) {
+            list.querySelectorAll('.ui-item').forEach(el => el.classList.remove('active'));
+            let item = list.querySelector(`.ui-item[data-val="${val}"]`);
+            if(item) item.classList.add('active');
+        }
+        if(!uiOnly) updateTransition(direction, val);
+    }
+
+    function splitCaptionText() {
+        if (!selectedClip || !selectedClip.isCaption) return;
+        let input = document.getElementById('captionTextContent');
+        let cursorPos = input.selectionStart;
+        let fullText = input.value;
+        if (cursorPos <= 0 || cursorPos >= fullText.length) return alert("الرجاء وضع مؤشر الكتابة في منتصف النص لتحديد مكان الفصل!");
+        let text1 = fullText.substring(0, cursorPos).trim();
+        let text2 = fullText.substring(cursorPos).trim();
+        if (text1 === "" || text2 === "") return;
+        let ratio = text1.length / (text1.length + text2.length);
+        let dur1 = selectedClip.dur * ratio;
+        let dur2 = selectedClip.dur - dur1;
+        selectedClip.text = text1;
+        selectedClip.name = text1;
+        selectedClip.dur = dur1;
+        let newClip = {
+            ...selectedClip,
+            id: Date.now() + Math.random(),
+            start: selectedClip.start + dur1,
+            dur: dur2,
+            text: text2,
+            name: text2
+        };
+        clips.push(newClip);
+        createElement(newClip);
+        input.value = text1;
+        applyStyles(selectedClip, document.getElementById(`media-${selectedClip.id}`));
+        renderTimeline();
+        syncUI();
+        save();
+        alert(" تم تقسيم الكابشن بنجاح! تم توزيع الوقت تلقائياً.");
+    }
+    function updateTransition(direction, type) {
+        if (!selectedClip) return;
+        if (direction === 'in') {
+            if (type === 'none') {
+                selectedClip.transitionIn = null;
+                let g = document.getElementById('transInDurGroup');
+                if(g) g.style.display = 'none';
+            } else {
+                let currentDur = parseFloat(document.getElementById('transInDur').value);
+                selectedClip.transitionIn = { type: type, dur: currentDur };
+                let g = document.getElementById('transInDurGroup');
+                if(g) g.style.display = 'block';
+            }
+        } else {
+            if (type === 'none') {
+                selectedClip.transitionOut = null;
+                let g = document.getElementById('transOutDurGroup');
+                if(g) g.style.display = 'none';
+            } else {
+                let currentDur = parseFloat(document.getElementById('transOutDur').value);
+                selectedClip.transitionOut = {
+                    type: type, dur: currentDur };
+                    let g = document.getElementById('transOutDurGroup');
+                    if(g) g.style.display = 'block';
+                }
+            }
+            save();
+        }
+    function updateTransitionDur(direction, val) {
+        if (!selectedClip) return;
+        if (direction === 'in' && selectedClip.transitionIn) {
+            selectedClip.transitionIn.dur = parseFloat(val);
+            let v = document.getElementById('transInDurVal');
+            if(v) v.innerText = val;
+        } else if (direction === 'out' && selectedClip.transitionOut) {
+            selectedClip.transitionOut.dur = parseFloat(val);
+            let v = document.getElementById('transOutDurVal');
+            if(v) v.innerText = val;
+        }
+        save();
+    }
+    function deleteSelected() {
+        if (selectedClip) {
+            let el = document.getElementById(`media-${selectedClip.id}`);
+            if(el) el.remove();
+            clips = clips.filter(c => c.id !== selectedClip.id);
+            closeSheet();
+            save();
+            renderTimeline();
+        }
+    }
+    function splitClip() {
+        let target = clips.find(c => currentTime > c.start && currentTime < (c.start + c.dur));
+        if(!target) return alert("مؤشر الوقت لا يتقاطع مع أي مقطع لقصّه!");
+        let d1 = currentTime - target.start;
+        let newClip = {
+            ...target,
+            id: Date.now(),
+            start: currentTime,
+            dur: target.dur - d1,
+            sourceOffset: target.sourceOffset + d1
+        };
+        target.dur = d1;
+        clips.push(newClip);
+        createElement(newClip);
+        renderTimeline();
+        save();
+    }
+    function changeLayer(direction) {
+        if (!selectedClip) return;
+        let newTrack = selectedClip.track + direction;
+        if (newTrack >= 0 && newTrack <= 3) {
+            selectedClip.track = newTrack;
+            applyStyles(selectedClip, document.getElementById(`media-${selectedClip.id}`));
+            save();
+            renderTimeline();
+        }
+    }
+    function onFontChange(selectElement) {
+        if (!selectedClip) return;
+        let family = selectElement.value;
+        let url = selectElement.options[selectElement.selectedIndex].getAttribute('data-url');
+        let fontFace = new FontFace(family, `url(${url})`);
+        fontFace.load().then(function(loadedFace) {
+            document.fonts.add(loadedFace);
+            selectedClip.fontFamily = family;
+            selectedClip.fontUrl = url;
+            applyStyles(selectedClip, document.getElementById(`media-${selectedClip.id}`));
+            if (selectedClip.isCaption) {
+                clips.forEach(c => {
+                    if (c.isCaption && c.id !== selectedClip.id) {
+                        c.fontFamily = family;
+                        c.fontUrl = url;
+                        applyStyles(c, document.getElementById(`media-${c.id}`));
+                    }
+                });
+            }
+            save();
+        }).catch(function(error) {});
+    }
+    function save() {
+        if (historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1);
+        historyStack.push(JSON.stringify(clips));
+        historyIndex++;
+    }
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            clips = JSON.parse(historyStack[historyIndex]);
+            closeSheet();
+            renderTimeline();
+        }
+    }
+    function redo() {
+        if (historyIndex < historyStack.length - 1) {
+            historyIndex++;
+            clips = JSON.parse(historyStack[historyIndex]);
+            closeSheet();
+            renderTimeline();
+        }
+    }
+    function exportToBackend() {
+        if (clips.length === 0) return alert("الرجاء إضافة ميديا أولاً");
+        let quality = parseInt(document.getElementById('exportQuality').value) || 1080;
+        if (window.FlutterControlChannel) window.FlutterControlChannel.postMessage(JSON.stringify({ quality: quality, elements: clips }));
+    }
+
+    save();
+</script>
+</body>
+</html>
